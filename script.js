@@ -1,25 +1,57 @@
 const shoppingList = document.querySelector(".shopping-list");
 const shoppingForm = document.querySelector(".shopping-form");
 const filterButtons = document.querySelectorAll(".filter-buttons button");
+const clearBtn = document.querySelector(".clear");
 
 document.addEventListener("DOMContentLoaded", function() {
     loadItems();
     
+    updateState();
+
     shoppingForm.addEventListener("submit", handleFormSubmit);
 
     for(let button of filterButtons) {
         button.addEventListener("click", handleFilterSelection);
     }
+
+    clearBtn.addEventListener("click", clear);
 });
 
-function loadItems() {
-    const items = [
-        {id:1, name: "Yumurta", completed: false },
-        {id:2, name: "Balık", completed: true },
-        {id:3, name: "Süt", completed: false },
-        {id:4, name: "Zeytin", completed: false },
-    ];
+function clear(){
+    shoppingList.innerHTML = "";
+    localStorage.clear("shoppingItems");
+    updateState();
 
+}
+
+function updateState(){
+    const isEmpty = shoppingList.querySelectorAll("li").length === 0;
+
+    const alert = document.querySelector(".alert");
+    const filterBtns = document.querySelector(".filter-buttons");
+
+    alert.classList.toggle("d-none", !isEmpty);
+    clearBtn.classList.toggle("d-none", isEmpty);
+    filterBtns.classList.toggle("d-none", isEmpty);
+}
+
+function saveToLS() {
+    const listItems = shoppingList.querySelectorAll("li");
+    const liste = [];
+    
+    for(let li of listItems) {
+        const id = li.getAttribute("item-id");
+        const name = li.querySelector(".item-name").textContent;
+        const completed = li.hasAttribute("item-completed");
+
+        liste.push({ id, name, completed});
+    }
+
+    localStorage.setItem("shoppingItems", JSON.stringify(liste));
+}
+
+function loadItems() {
+    const items = JSON.parse(localStorage.getItem("shoppingItems"))  || [];
     shoppingList.innerHTML = "";
 
     for(let item of items) {
@@ -42,6 +74,10 @@ function addItem(input) {
     input.value = "";
 
     updateFilteredItems();
+
+    saveToLS();
+    updateState();
+
 }
 
 function generateId() {
@@ -66,6 +102,8 @@ function toggleCompleted(e) {
     li.toggleAttribute("item-completed", e.target.checked);
 
     updateFilteredItems();
+
+    saveToLS();
 }
 
 function createListItem(item) {
@@ -91,6 +129,7 @@ function createListItem(item) {
 
     // li
     const li = document.createElement("li");
+    li.setAttribute("item-id", item.id);
     li.className = "border rounded p-2 mb-1";
     li.toggleAttribute("item-completed", item.completed);
 
@@ -104,6 +143,10 @@ function createListItem(item) {
 function removeItem(e) {
     const li = e.target.parentElement;
     shoppingList.removeChild(li);
+
+    saveToLS();
+    updateState();
+
 }
 
 function openEditMode(e) {
@@ -115,6 +158,8 @@ function openEditMode(e) {
 
 function closeEditMode(e) {
     e.target.contentEditable = false;
+
+    saveToLS();
 }
 
 function cancelEnter(e) {
